@@ -62,13 +62,14 @@ Kangaroo [-v] [-t nbThread] [-d dpBit] [gpu] [-check]
 
 Structure of the input file:
 * All values are in hex format
+* Each key line may contain either a public key alone or a pair "hash160 publicKey"
 * Public keys can be given either in compressed or uncompressed format
 
 ```
 Start range
 End range
-Key #1
-Key #2
+[hash160] Key #1
+[hash160] Key #2
 ...
 ```
 
@@ -77,7 +78,7 @@ ex
 ```
 49dccfd96dc5df56487436f5a1b18c4f5d34f65ddb48cb5e0000000000000000
 49dccfd96dc5df56487436f5a1b18c4f5d34f65ddb48cb5effffffffffffffff
-0459A3BFDAD718C9D3FAC7C187F1139F0815AC5D923910D516E186AFDA28B221DC994327554CED887AAE5D211A2407CDD025CFC3779ECB9C9D7F2F1A1DDF3E9FF8
+f8c2bf34c646831b6bf2192c05edc9857624a8fe 0459A3BFDAD718C9D3FAC7C187F1139F0815AC5D923910D516E186AFDA28B221DC994327554CED887AAE5D211A2407CDD025CFC3779ECB9C9D7F2F1A1DDF3E9F
 0335BB25364370D4DD14A9FC2B406D398C4B53C85BE58FCC7297BD34004602EBEC
 ```
 
