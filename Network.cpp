@@ -1249,7 +1249,12 @@ bool Kangaroo::GetConfigFromServer() {
   ::printf("Succesfully connected to server: %s (Version %d)\n",serverIp.c_str(),version);
 
   keysToSearch.clear();
+  keysHash160.clear();
   keysToSearch.push_back(key);
+  uint8_t h[20];
+  GetPubKeyHash160(key,h);
+  keysHash160.push_back(std::array<uint8_t,20>());
+  memcpy(keysHash160.back().data(),h,20);
   return true;
 
 }

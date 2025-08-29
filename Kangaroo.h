@@ -38,6 +38,8 @@ typedef int SOCKET;
 
 #include <string>
 #include <vector>
+#include <array>
+#include "hash160.h"
 #include "SECPK1/SECP256k1.h"
 #include "HashTable.h"
 #include "SECPK1/IntGroup.h"
@@ -175,6 +177,7 @@ private:
   void InitSearchKey();
   std::string GetTimeStr(double s);
   bool Output(Int* pk,char sInfo,int sType);
+  void GetPubKeyHash160(Point &p, uint8_t out[20]);
 
   // Backup stuff
   void SaveWork(std::string fileName,FILE *f,int type,uint64_t totalCount,double totalTime);
@@ -248,6 +251,7 @@ private:
   int32_t initDPSize;
   uint64_t collisionInSameHerd;
   std::vector<Point> keysToSearch;
+  std::vector<std::array<uint8_t,20>> keysHash160;
   Point keyToSearch;
   Point keyToSearchNeg;
   uint32_t keyIdx;

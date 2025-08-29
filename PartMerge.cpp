@@ -327,7 +327,12 @@ bool Kangaroo::MergeWorkPartPart(std::string& part1Name,std::string& part2Name) 
   // Set starting parameters
   endOfSearch = false;
   keysToSearch.clear();
+  keysHash160.clear();
   keysToSearch.push_back(k1);
+  uint8_t h[20];
+  GetPubKeyHash160(k1,h);
+  keysHash160.push_back(std::array<uint8_t,20>());
+  memcpy(keysHash160.back().data(),h,20);
   keyIdx = 0;
   collisionInSameHerd = 0;
   rangeStart.Set(&RS1);
@@ -463,7 +468,12 @@ bool Kangaroo::FillEmptyPartFromFile(std::string& partName,std::string& fileName
   // Save header
   dpSize = dp1;
   keysToSearch.clear();
+  keysHash160.clear();
   keysToSearch.push_back(k1);
+  uint8_t h[20];
+  GetPubKeyHash160(k1,h);
+  keysHash160.push_back(std::array<uint8_t,20>());
+  memcpy(keysHash160.back().data(),h,20);
   keyIdx = 0;
   collisionInSameHerd = 0;
   rangeStart.Set(&RS1);
@@ -636,7 +646,12 @@ bool Kangaroo::MergeWorkPart(std::string& partName,std::string& file2,bool print
 
   // Set starting parameters
   keysToSearch.clear();
+  keysHash160.clear();
   keysToSearch.push_back(k1);
+  uint8_t h2[20];
+  GetPubKeyHash160(k1,h2);
+  keysHash160.push_back(std::array<uint8_t,20>());
+  memcpy(keysHash160.back().data(),h2,20);
   keyIdx = 0;
   collisionInSameHerd = 0;
   rangeStart.Set(&RS1);
