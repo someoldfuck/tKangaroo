@@ -17,9 +17,11 @@
 
 #include "Kangaroo.h"
 #include <fstream>
+#include <array>
 #include "SECPK1/IntGroup.h"
 #include "Timer.h"
 #include <string.h>
+#include <sstream>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <algorithm>
@@ -123,15 +125,59 @@ bool Kangaroo::ParseConfigFile(std::string &fileName) {
 
   rangeStart.SetBase16((char *)lines[0].c_str());
   rangeEnd.SetBase16((char *)lines[1].c_str());
+  keysToSearch.clear();
+  keysHash160.clear();
   for(int i=2;i<(int)lines.size();i++) {
-    
+
+    // Each line can be either:
+    //   PubKey
+    //   Hash160 PubKey
+    std::vector<std::string> tokens;
+    std::string tok;
+    std::istringstream iss(lines[i]);
+    while(iss >> tok) tokens.push_back(tok);
+
+    if(tokens.size() == 0)
+      continue;
+
+    std::string hashHex;
+    std::string pubHex;
+
+    if(tokens.size() == 1) {
+      // Single token, assume it is a public key
+      pubHex = tokens[0];
+    } else {
+      // First token is hash160, second token is public key
+      hashHex = tokens[0];
+      pubHex  = tokens[1];
+    }
+
     Point p;
     bool isCompressed;
-    if( !secp->ParsePublicKeyHex(lines[i],p,isCompressed) ) {
+    if( !secp->ParsePublicKeyHex(pubHex,p,isCompressed) ) {
       ::printf("%s, error line %d: %s\n",fileName.c_str(),i,lines[i].c_str());
       return false;
     }
     keysToSearch.push_back(p);
+
+    std::array<uint8_t,20> h;
+    if(hashHex.length() > 0) {
+      // Remove optional 0x prefix
+      if(hashHex.rfind("0x",0) == 0 || hashHex.rfind("0X",0) == 0)
+        hashHex = hashHex.substr(2);
+      if(hashHex.length() != 40) {
+        ::printf("%s, error line %d: invalid hash160 %s\n",fileName.c_str(),i,hashHex.c_str());
+        return false;
+      }
+      for(int k=0;k<20;k++) {
+        std::string byteStr = hashHex.substr(k*2,2);
+        h[k] = (uint8_t)strtoul(byteStr.c_str(),NULL,16);
+      }
+    } else {
+      GetPubKeyHash160(p,h.data());
+    }
+
+    keysHash160.push_back(h);
 
   }
 
@@ -171,6 +217,15 @@ void Kangaroo::SetDP(int size) {
 
 }
 
+void Kangaroo::GetPubKeyHash160(Point &p, uint8_t out[20]) {
+
+  unsigned char pub[33];
+  pub[0] = p.y.IsEven() ? 0x02 : 0x03;
+  p.x.Get32Bytes(pub + 1);
+  Hash160(pub,33,out);
+
+}
+
 // ----------------------------------------------------------------------------
 
 bool Kangaroo::Output(Int *pk,char sInfo,int sType) {
@@ -194,9 +249,11 @@ bool Kangaroo::Output(Int *pk,char sInfo,int sType) {
     ::printf("\n");
 
   Point PR = secp->ComputePublicKey(pk);
+  uint8_t h[20];
+  GetPubKeyHash160(PR,h);
 
   ::fprintf(f,"Key#%2d [%d%c]Pub:  0x%s \n",keyIdx,sType,sInfo,secp->GetPublicKeyHex(true,keysToSearch[keyIdx]).c_str());
-  if(PR.equals(keysToSearch[keyIdx])) {
+  if(memcmp(h, keysHash160[keyIdx].data(), 20) == 0) {
     ::fprintf(f,"       Priv: 0x%s \n",pk->GetBase16().c_str());
   } else {
     ::fprintf(f,"       Failed !\n");
@@ -226,26 +283,18 @@ bool  Kangaroo::CheckKey(Int d1,Int d2,uint8_t type) {
 
   Int pk(&d1);
   pk.ModAddK1order(&d2);
+#ifdef USE_SYMMETRY
+  pk.ModAddK1order(&rangeWidthDiv2);
+#endif
+  pk.ModAddK1order(&rangeStart);
 
   Point P = secp->ComputePublicKey(&pk);
+  uint8_t h[20];
+  GetPubKeyHash160(P,h);
 
-  if(P.equals(keyToSearch)) {
-    // Key solved    
-#ifdef USE_SYMMETRY
-    pk.ModAddK1order(&rangeWidthDiv2);
-#endif
-    pk.ModAddK1order(&rangeStart);    
-    return Output(&pk,'N',type);
-  }
-
-  if(P.equals(keyToSearchNeg)) {
-    // Key solved
-    pk.ModNegK1order();
-#ifdef USE_SYMMETRY
-    pk.ModAddK1order(&rangeWidthDiv2);
-#endif
-    pk.ModAddK1order(&rangeStart);
-    return Output(&pk,'S',type);
+  if(memcmp(h, keysHash160[keyIdx].data(), 20) == 0) {
+    char sInfo = P.equals(keysToSearch[keyIdx]) ? 'N' : 'S';
+    return Output(&pk,sInfo,type);
   }
 
   return false;
