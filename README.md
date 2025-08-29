@@ -3,6 +3,13 @@
 A Pollard's kangaroo interval ECDLP solver for SECP256K1 (based on VanitySearch engine).\
 **This program is limited to a 125bit interval search.**
 
+## Build requirements
+
+- A C++ compiler such as `g++`
+- `make`
+- OpenSSL development libraries (e.g. `libssl-dev` on Debian/Ubuntu)
+- Optional: NVIDIA CUDA Toolkit for GPU acceleration
+
 # Feature
 
 <ul>

@@ -149,7 +149,12 @@ bool Kangaroo::MergeWork(std::string& file1,std::string& file2,std::string& dest
 
   // Set starting parameters
   keysToSearch.clear();
+  keysHash160.clear();
   keysToSearch.push_back(k1);
+  uint8_t h[20];
+  GetPubKeyHash160(k1,h);
+  keysHash160.push_back(std::array<uint8_t,20>());
+  memcpy(keysHash160.back().data(),h,20);
   keyIdx = 0;
   collisionInSameHerd = 0;
   rangeStart.Set(&RS1);

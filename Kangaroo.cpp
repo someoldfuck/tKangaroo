@@ -123,6 +123,8 @@ bool Kangaroo::ParseConfigFile(std::string &fileName) {
 
   rangeStart.SetBase16((char *)lines[0].c_str());
   rangeEnd.SetBase16((char *)lines[1].c_str());
+  keysToSearch.clear();
+  keysHash160.clear();
   for(int i=2;i<(int)lines.size();i++) {
     
     Point p;
@@ -132,6 +134,10 @@ bool Kangaroo::ParseConfigFile(std::string &fileName) {
       return false;
     }
     keysToSearch.push_back(p);
+    uint8_t h[20];
+    GetPubKeyHash160(p,h);
+    keysHash160.push_back(std::array<uint8_t,20>());
+    memcpy(keysHash160.back().data(),h,20);
 
   }
 
@@ -171,6 +177,15 @@ void Kangaroo::SetDP(int size) {
 
 }
 
+void Kangaroo::GetPubKeyHash160(Point &p, uint8_t out[20]) {
+
+  unsigned char pub[33];
+  pub[0] = p.y.IsEven() ? 0x02 : 0x03;
+  p.x.Get32Bytes(pub + 1);
+  Hash160(pub,33,out);
+
+}
+
 // ----------------------------------------------------------------------------
 
 bool Kangaroo::Output(Int *pk,char sInfo,int sType) {
@@ -194,9 +209,11 @@ bool Kangaroo::Output(Int *pk,char sInfo,int sType) {
     ::printf("\n");
 
   Point PR = secp->ComputePublicKey(pk);
+  uint8_t h[20];
+  GetPubKeyHash160(PR,h);
 
   ::fprintf(f,"Key#%2d [%d%c]Pub:  0x%s \n",keyIdx,sType,sInfo,secp->GetPublicKeyHex(true,keysToSearch[keyIdx]).c_str());
-  if(PR.equals(keysToSearch[keyIdx])) {
+  if(memcmp(h, keysHash160[keyIdx].data(), 20) == 0) {
     ::fprintf(f,"       Priv: 0x%s \n",pk->GetBase16().c_str());
   } else {
     ::fprintf(f,"       Failed !\n");
@@ -226,26 +243,18 @@ bool  Kangaroo::CheckKey(Int d1,Int d2,uint8_t type) {
 
   Int pk(&d1);
   pk.ModAddK1order(&d2);
+#ifdef USE_SYMMETRY
+  pk.ModAddK1order(&rangeWidthDiv2);
+#endif
+  pk.ModAddK1order(&rangeStart);
 
   Point P = secp->ComputePublicKey(&pk);
+  uint8_t h[20];
+  GetPubKeyHash160(P,h);
 
-  if(P.equals(keyToSearch)) {
-    // Key solved    
-#ifdef USE_SYMMETRY
-    pk.ModAddK1order(&rangeWidthDiv2);
-#endif
-    pk.ModAddK1order(&rangeStart);    
-    return Output(&pk,'N',type);
-  }
-
-  if(P.equals(keyToSearchNeg)) {
-    // Key solved
-    pk.ModNegK1order();
-#ifdef USE_SYMMETRY
-    pk.ModAddK1order(&rangeWidthDiv2);
-#endif
-    pk.ModAddK1order(&rangeStart);
-    return Output(&pk,'S',type);
+  if(memcmp(h, keysHash160[keyIdx].data(), 20) == 0) {
+    char sInfo = P.equals(keysToSearch[keyIdx]) ? 'N' : 'S';
+    return Output(&pk,sInfo,type);
   }
 
   return false;

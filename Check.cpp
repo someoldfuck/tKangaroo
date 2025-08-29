@@ -219,7 +219,12 @@ void Kangaroo::CheckPartition(int nbCore,std::string& partName) {
 
   // Set starting parameters
   keysToSearch.clear();
+  keysHash160.clear();
   keysToSearch.push_back(k1);
+  uint8_t h[20];
+  GetPubKeyHash160(k1,h);
+  keysHash160.push_back(std::array<uint8_t,20>());
+  memcpy(keysHash160.back().data(),h,20);
   keyIdx = 0;
   collisionInSameHerd = 0;
   rangeStart.Set(&RS1);
@@ -334,7 +339,12 @@ void Kangaroo::CheckWorkFile(int nbCore,std::string& fileName) {
 
   // Set starting parameters
   keysToSearch.clear();
+  keysHash160.clear();
   keysToSearch.push_back(k1);
+  uint8_t h2[20];
+  GetPubKeyHash160(k1,h2);
+  keysHash160.push_back(std::array<uint8_t,20>());
+  memcpy(keysHash160.back().data(),h2,20);
   keyIdx = 0;
   collisionInSameHerd = 0;
   rangeStart.Set(&RS1);
@@ -477,7 +487,12 @@ void Kangaroo::Check(std::vector<int> gpuId,std::vector<int> gridSize) {
     Point P = secp->ComputePublicKey(&k1);
     CreateJumpTable();
     keysToSearch.clear();
+    keysHash160.clear();
     keysToSearch.push_back(P);
+    uint8_t h3[20];
+    GetPubKeyHash160(P,h3);
+    keysHash160.push_back(std::array<uint8_t,20>());
+    memcpy(keysHash160.back().data(),h3,20);
     keyIdx = 0;
     InitRange();
     InitSearchKey();
