@@ -17,6 +17,7 @@
 
 #include "Kangaroo.h"
 #include <fstream>
+#include <array>
 #include "SECPK1/IntGroup.h"
 #include "Timer.h"
 #include <string.h>
@@ -182,6 +183,25 @@ bool Kangaroo::ParseConfigFile(std::string &fileName) {
 
     keysHash160.push_back(std::array<uint8_t,20>());
     memcpy(keysHash160.back().data(),h,20);
+
+    std::array<uint8_t,20> h;
+    if(hashHex.length() > 0) {
+      // Remove optional 0x prefix
+      if(hashHex.rfind("0x",0) == 0 || hashHex.rfind("0X",0) == 0)
+        hashHex = hashHex.substr(2);
+      if(hashHex.length() != 40) {
+        ::printf("%s, error line %d: invalid hash160 %s\n",fileName.c_str(),i,hashHex.c_str());
+        return false;
+      }
+      for(int k=0;k<20;k++) {
+        std::string byteStr = hashHex.substr(k*2,2);
+        h[k] = (uint8_t)strtoul(byteStr.c_str(),NULL,16);
+      }
+    } else {
+      GetPubKeyHash160(p,h.data());
+    }
+
+    keysHash160.push_back(h);
 
   }
 
